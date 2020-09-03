@@ -1,0 +1,22 @@
+{
+  "name": "sitemap_utils",
+  "version": "0.1.0",
+  "description": "Utility functions for working with XML sitemap URLs",
+  "bin": {
+    "flatten_sitemap": "./flatten_sitemap.js"
+  },
+  "author": "ahebrank",
+  "license": "MIT",
+  "homepage": "https://github.com/ahebrank/sitemap_utils",
+  "repository": "ahebrank/sitemap_utils",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "fs": "0.0.1-security",
+    "glob": "^7.1.1",
+    "line-number": "^0.1.0",
+    "minimist": "^1.2.0",
+    "node-fetch": "^2.1.1",
+    "shuffle-array": "^1.0.1",
+    "xmlbuilder": "^9.0.7"
+  }
+}
