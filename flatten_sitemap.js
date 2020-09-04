@@ -5,6 +5,9 @@ const argv = require('minimist')(process.argv.slice(2));
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const shuffle = require('shuffle-array');
+const { distance } = require('talisman/metrics/jaro-winkler');
+const apclust = require('@ahebrank/affinity-propagation');
+const ProgressBar = require('progress');
 
 if ('sitemap' in argv) {
     var sitemapUrl = argv.sitemap;
@@ -29,10 +32,8 @@ let limit = 0;
 if ('limit' in argv) {
     limit = argv.limit;
 }
-let randomize = false;
-if ('randomize' in argv) {
-    randomize = true;
-}
+let randomize = ('randomize' in argv);
+let cluster = ('cluster' in argv);
 
 function getUrls(sitemapUrl, tag = 'url', sitemapExclude = false, sitemapFind = false, sitemapReplace = false) {
     console.log(sitemapUrl);
@@ -91,14 +92,49 @@ Promise.resolve()
         if (randomize) {
             urls = shuffle(urls);
         }
-        return urls;
-    })
-    .then(urls => {
-        // optionally truncate
-        if (limit > 0) {
-            limit = (limit > urls.length)? urls.length : limit;
-            urls = urls.slice(0, limit + 1);
+        if (cluster) {
+            let bar = new ProgressBar(' similarity [:bar] :percent :etas', {
+              complete: '=',
+              incomplete: ' ',
+              width: 20,
+              total: urls.length * urls.length
+            });
+
+            // Build a 2d matrix of similarity.
+            const dist = urls.map((url) => {
+              bar.tick(urls.length);
+              return urls.map((url2) => Math.floor(100 * (distance(url, url2))));
+            });
+            // Affinity propagation to cluster automagically.
+            const result = apclust.getClusters(dist);
+            // Order URLs by alternating through exemplars.
+            // In theory you could then grab the first N URls to get a good sample.
+            const exemplars = result.exemplars;
+            exemplars.forEach((i) => {
+              console.log('Cluster ' + i + ' example: ' + urls[i]);
+            });
+            let cluster_i = result.clusters;
+            let exemplar_i = -1;
+            let urls_reordered = [];
+            while (urls_reordered.length < urls.length) {
+              exemplar_i++;
+              if (exemplar_i > exemplars.length) {
+                exemplar_i = 0;
+              }
+              url_exemplar_i = cluster_i.indexOf(exemplars[exemplar_i]);
+              if (url_exemplar_i !== -1) {
+                urls_reordered.push(urls[url_exemplar_i]);
+                cluster_i[url_exemplar_i] = null;
+              }
+            }
+            urls = urls_reordered;
         }
+
+        if (limit > 0) {
+          limit = (limit > urls.length)? urls.length : limit;
+          urls = urls.slice(0, limit + 1);
+        }
+
         return urls;
     })
     .then(urls => {
@@ -121,5 +157,5 @@ Promise.resolve()
         }
     })
     .catch(error => {
-        throw new Error();
+        console.error(error);
     });
