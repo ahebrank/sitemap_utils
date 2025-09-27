@@ -73,7 +73,7 @@ function getUrls(sitemapUrl, tag = 'url', sitemapExclude = false, sitemapFind = 
 
 Promise.resolve()
     .then(() => {
-        return getUrls(sitemapUrl, 'sitemap');
+        return getUrls(sitemapUrl, 'sitemap', false, sitemapFind, sitemapReplace);
     })
     .then(urls => {
         return urls.concat([sitemapUrl]);
